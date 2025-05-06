@@ -9,7 +9,7 @@
 
     <form method="POST">
         <input type="hidden" name="game_date" value="{{ selected_date }}">
-
+        
         <label for="player">Player Name:</label>
         <input type="text" name="player" required><br><br>
 
@@ -25,14 +25,12 @@
         <label for="prediction">Predicted Points:</label>
         <input type="number" name="prediction" required><br><br>
 
-        <label for="prediction_type">Higher or Lower:</label>
-        <select name="prediction_type" required>
-            <option value="higher">Higher</option>
-            <option value="lower">Lower</option>
-        </select><br><br>
-
         <label for="wager">Wager Points:</label>
         <input type="number" name="wager" required><br><br>
+
+        <label>Prediction Type:</label><br>
+        <input type="radio" name="prediction_type" value="higher" required> Higher<br>
+        <input type="radio" name="prediction_type" value="lower" required> Lower<br><br>
 
         <button type="submit">Submit Prediction</button>
     </form>
