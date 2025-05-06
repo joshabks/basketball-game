@@ -39,4 +39,54 @@ def get_player_stat(player_name, game_id):
         if not stats:
             return None
 
-        return stats
+        return stats[0]["pts"]
+    except Exception as e:
+        print("Error getting player stats:", e)
+        return None
+
+@app.route("/")
+def index():
+    games = get_today_games()
+    today = datetime.today().strftime('%Y-%m-%d')
+    return render_template("index.html", games=games, points=user_points, today=today)
+
+@app.route("/predict", methods=["GET", "POST"])
+def predict():
+    global user_points
+
+    if request.method == "POST":
+        player = request.form["player"]
+        prediction = int(request.form["prediction"])
+        wager = int(request.form["wager"])
+        prediction_type = request.form["prediction_type"]
+        game_id = request.form["game_id"]
+
+        if wager > user_points or wager <= 0:
+            return "Invalid wager"
+
+        actual = get_player_stat(player, game_id)
+
+        if actual is None:
+            return "Stat not available yet. Try again later."
+
+        success = (
+            (prediction_type == "higher" and actual > prediction)
+            or (prediction_type == "lower" and actual < prediction)
+        )
+
+        winnings = wager * 2 if success else 0
+        user_points = user_points + winnings if success else user_points - wager
+
+        return render_template("result.html",
+                               player=player,
+                               predicted=prediction,
+                               actual=actual,
+                               success=success,
+                               winnings=winnings,
+                               points=user_points)
+    else:
+        games = get_today_games()
+        return render_template("predict.html", games=games, points=user_points)
+
+if __name__ == "__main__":
+    app.run(debug=True)
