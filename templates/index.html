@@ -7,14 +7,14 @@
     <h1>NBA Prediction Game</h1>
     <p>You have {{ points }} points.</p>
 
-    <h2>Upcoming Games</h2>
+    <h2>Choose a Date for Upcoming Games</h2>
     <form method="GET" action="{{ url_for('predict') }}">
-        <label for="date">Choose a date for games:</label>
+        <label for="date">Select a date:</label>
         <input type="date" id="date" name="date" min="{{ today }}" value="{{ today }}" required>
         <button type="submit">Show Games</button>
     </form>
 
-    <h3>Games for the selected date:</h3>
+    <h2>Today's Games</h2>
     {% if games %}
         <ul>
             {% for game in games %}
@@ -23,7 +23,7 @@
         </ul>
         <a href="{{ url_for('predict') }}">Make a Prediction</a>
     {% else %}
-        <p>No games for the selected date.</p>
+        <p>No games today.</p>
     {% endif %}
 </body>
 </html>
