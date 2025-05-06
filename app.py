@@ -1,23 +1,30 @@
 from flask import Flask, render_template, request, redirect, url_for
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 
 app = Flask(__name__)
 user_points = 100
 
 # Get the games for a specific date
 def get_games(date):
-    # Ensure that the date is in the correct format (YYYY-MM-DD)
+    # Log the date being passed to check the format
+    print(f"Fetching games for date: {date}")
+    
     try:
         datetime.strptime(date, '%Y-%m-%d')  # Verify correct format
     except ValueError:
+        print(f"Invalid date format: {date}")
         return []  # If the date is invalid, return an empty list
 
+    # Make API call to fetch games for the date
     url = f"https://www.balldontlie.io/api/v1/games?start_date={date}&end_date={date}"
     try:
         response = requests.get(url)
-        response.raise_for_status()
+        response.raise_for_status()  # Check for any API errors
         data = response.json().get("data", [])
+        
+        # Log the API response to see what data we are getting
+        print(f"API response for {date}: {data}")
         
         if not data:
             print(f"No games found for {date}")
@@ -26,36 +33,6 @@ def get_games(date):
     except Exception as e:
         print(f"Error fetching games for {date}: {e}")
         return []
-
-# Get the player ID based on name
-def get_player_id(player_name):
-    try:
-        response = requests.get(f"https://www.balldontlie.io/api/v1/players?search={player_name}")
-        response.raise_for_status()
-        data = response.json().get("data", [])
-        return data[0]["id"] if data else None
-    except Exception as e:
-        print("Error getting player ID:", e)
-        return None
-
-# Get the player's stats for the specific game
-def get_player_stat(player_name, game_id):
-    try:
-        player_id = get_player_id(player_name)
-        if not player_id:
-            return None
-
-        stats_url = f"https://www.balldontlie.io/api/v1/stats?game_ids[]={game_id}&player_ids[]={player_id}"
-        stats_resp = requests.get(stats_url)
-        stats_resp.raise_for_status()
-        stats = stats_resp.json().get("data", [])
-        if not stats:
-            return None
-
-        return stats[0]["pts"]
-    except Exception as e:
-        print("Error getting player stats:", e)
-        return None
 
 @app.route("/")
 def index():
@@ -80,29 +57,4 @@ def predict():
 
         actual = get_player_stat(player, game_id)
 
-        if actual is None:
-            return "Stat not available yet. Try again later."
-
-        # Check if prediction is correct
-        success = (prediction_type == "higher" and actual > prediction) or (prediction_type == "lower" and actual < prediction)
-
-        winnings = wager * 2 if success else 0
-        user_points = user_points + winnings if success else user_points - wager
-
-        return render_template("result.html",
-                               player=player,
-                               predicted=prediction,
-                               actual=actual,
-                               success=success,
-                               winnings=winnings,
-                               points=user_points)
-
-    else:
-        game_date = request.args.get("date", datetime.today().strftime('%Y-%m-%d'))
-        games = get_games(game_date)
-        if not games:
-            return render_template("no_games.html", date=game_date)  # Show a message if no games found
-        return render_template("predict.html", games=games, points=user_points, selected_date=game_date)
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+        if
