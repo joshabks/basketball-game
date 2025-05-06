@@ -5,26 +5,17 @@ from datetime import datetime
 app = Flask(__name__)
 user_points = 100
 
-# Get NBA games for a specific date
-def get_games(date):
-    try:
-        datetime.strptime(date, '%Y-%m-%d')  # validate format
-    except ValueError:
-        print(f"Invalid date format: {date}")
-        return []
-
-    url = f"https://www.balldontlie.io/api/v1/games?start_date={date}&end_date={date}"
+def get_today_games():
+    today = datetime.today().strftime('%Y-%m-%d')
+    url = f"https://www.balldontlie.io/api/v1/games?start_date={today}&end_date={today}"
     try:
         response = requests.get(url)
         response.raise_for_status()
-        games = response.json().get("data", [])
-        print(f"Games on {date}: {games}")
-        return games
+        return response.json().get("data", [])
     except Exception as e:
-        print(f"Error fetching games for {date}: {e}")
+        print("Error getting games:", e)
         return []
 
-# Get a player's ID by name
 def get_player_id(player_name):
     try:
         response = requests.get(f"https://www.balldontlie.io/api/v1/players?search={player_name}")
@@ -35,7 +26,6 @@ def get_player_id(player_name):
         print("Error getting player ID:", e)
         return None
 
-# Get a player's actual points for a given game
 def get_player_stat(player_name, game_id):
     try:
         player_id = get_player_id(player_name)
@@ -46,57 +36,7 @@ def get_player_stat(player_name, game_id):
         stats_resp = requests.get(stats_url)
         stats_resp.raise_for_status()
         stats = stats_resp.json().get("data", [])
-        return stats[0]["pts"] if stats else None
-    except Exception as e:
-        print("Error getting player stats:", e)
-        return None
+        if not stats:
+            return None
 
-@app.route("/")
-def index():
-    today = datetime.today().strftime('%Y-%m-%d')
-    games = get_games(today)
-    return render_template("index.html", games=games, points=user_points, today=today)
-
-@app.route("/predict", methods=["GET", "POST"])
-def predict():
-    global user_points
-
-    if request.method == "POST":
-        player = request.form["player"]
-        prediction = int(request.form["prediction"])
-        wager = int(request.form["wager"])
-        game_id = request.form["game_id"]
-        prediction_type = request.form["prediction_type"]
-        game_date = request.form["game_date"]
-
-        if wager > user_points or wager <= 0:
-            return "Invalid wager amount."
-
-        actual = get_player_stat(player, game_id)
-        if actual is None:
-            return "Stats not available yet. Try again later."
-
-        # Determine if the prediction was correct
-        success = (prediction_type == "higher" and actual > prediction) or \
-                  (prediction_type == "lower" and actual < prediction)
-
-        winnings = wager * 2 if success else 0
-        user_points = user_points + winnings if success else user_points - wager
-
-        return render_template("result.html",
-                               player=player,
-                               predicted=prediction,
-                               actual=actual,
-                               success=success,
-                               winnings=winnings,
-                               points=user_points)
-
-    else:
-        game_date = request.args.get("date", datetime.today().strftime('%Y-%m-%d'))
-        games = get_games(game_date)
-        if not games:
-            return render_template("no_games.html", date=game_date)
-        return render_template("predict.html", games=games, points=user_points, selected_date=game_date)
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+        return stats
