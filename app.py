@@ -7,11 +7,22 @@ user_points = 100
 
 # Get the games for a specific date
 def get_games(date):
+    # Ensure that the date is in the correct format (YYYY-MM-DD)
+    try:
+        datetime.strptime(date, '%Y-%m-%d')  # Verify correct format
+    except ValueError:
+        return []  # If the date is invalid, return an empty list
+
     url = f"https://www.balldontlie.io/api/v1/games?start_date={date}&end_date={date}"
     try:
         response = requests.get(url)
         response.raise_for_status()
-        return response.json().get("data", [])
+        data = response.json().get("data", [])
+        
+        if not data:
+            print(f"No games found for {date}")
+        
+        return data
     except Exception as e:
         print(f"Error fetching games for {date}: {e}")
         return []
@@ -50,7 +61,7 @@ def get_player_stat(player_name, game_id):
 def index():
     today = datetime.today().strftime('%Y-%m-%d')
     games = get_games(today)
-    return render_template("index.html", games=games, points=user_points)
+    return render_template("index.html", games=games, points=user_points, today=today)
 
 @app.route("/predict", methods=["GET", "POST"])
 def predict():
@@ -89,6 +100,8 @@ def predict():
     else:
         game_date = request.args.get("date", datetime.today().strftime('%Y-%m-%d'))
         games = get_games(game_date)
+        if not games:
+            return render_template("no_games.html", date=game_date)  # Show a message if no games found
         return render_template("predict.html", games=games, points=user_points, selected_date=game_date)
 
 if __name__ == "__main__":
